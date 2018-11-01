@@ -14,8 +14,9 @@ class GRID:
         self.discount = discount
         self.epsilon = epsilon
 
-        # Set up action values as 3-D array
+        # Set up action values and policy as 3-D arrays
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+        self.policy = np.zeros((self.grid_dim, self.grid_dim, 4))    # USE np.argmax or arr == np.amax(arr)
 
         # Set up a 2-D array representing trap locations
         self.trap_locations = np.zeros((self.grid_dim, self.grid_dim), dtype=int)
