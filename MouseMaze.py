@@ -32,27 +32,10 @@ class GRID:
         self.trap_locations = np.zeros((self.grid_dim, self.grid_dim), dtype=int)
 
         # Generate the locations of the traps randomly, or use default
-        # TODO --> Make default less lame
+        # default case, use the example on the instructions
         if self.num_traps == -1:
-            trap_indices = set([19,25,29,35,42,46,49,52,54,59])
-    
-        # set starting point and ending point (cheese)
-        #self.start_pos = (0, 0)
-        #self.cheese_pos = (self.grid_dim-1, self.grid_dim-1)     
-
-        # TODO --> Add mouse and cheese locations to the class, differentiate between traps and cheese
-    
-
-    # Take an action according to the policy in the grid
-#    def step(self):
-        # Choose an action according to the policy (but epsilon greedy)
-#        if (np.random.binomial(1, self.epsilon) == 1):
-#            action = np.random.choice(self.action_values[
-
-    # Performs n-step Temporal Difference learning
-#    def sarsa(self):
-
-
+            trap_indices = set([(3, 1), (6, 1), (5, 2), (2, 3), (4, 3), (7, 3), (6, 4), (3, 5), (5, 6), (6, 6)])
+        # else place traps randomly
         else:
             trap_indices = set()
             while len(trap_indices) < self.num_traps:
