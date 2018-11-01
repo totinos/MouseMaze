@@ -26,21 +26,28 @@ class GRID:
         if self.num_traps == -1:
             self.num_traps = 10
     
+        # set starting point and ending point (cheese)
+        self.start = (0, 0)
+        self.cheese = (self.grid_dim-1, self.grid_dim-1)     
+
         # TODO --> Should (0,0) be allowed for a trap position? Probably not if the mouse has to start there
         #      --> What about the cheese? Is it always at the bottom right?
         trap_indices = set()
-        for i in range(self.num_traps):
-            while (True):
-                x = np.random.randint(self.grid_dim ** 2)
-                if (x not in trap_indices):
-                    trap_indices.add(x)
-                    break
-        for i in trap_indices:
-            self.trap_locations[i//self.grid_dim,i%self.grid_dim] = 1
+        while len(trap_indices) < self.num_traps:
+                trap_x = np.random.randint(self.grid_dim)
+                trap_y = np.random.randint(self.grid_dim)
+                loc = (trap_x, trap_y)
+                if (loc != self.start and loc != self.cheese):
+                    if (loc not in trap_indices):
+                        trap_indices.add(loc)
+
+        for loc in trap_indices:
+            x = loc[0]
+            y = loc[1]
+            self.trap_locations[x, y] = 1
         print(self.trap_locations)
 
-        # TODO --> Add mouse and cheese locations to the class, differentiate between traps and cheese
-        
+   
 
 if __name__ == "__main__":
 
