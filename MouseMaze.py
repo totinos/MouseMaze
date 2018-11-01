@@ -21,8 +21,8 @@ class GRID:
         self.LEFT = 3
 
         # Define the starting and ending states
-        self.START = [0, 0]
-        self.GOAL = [7, 7]
+        self.START_POS = (0, 0)
+        self.CHEESE_POS = (self.grid_dim-1, self.grid_dim-1)
 
         # Set up action values and policy as 3-D arrays
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
@@ -37,22 +37,8 @@ class GRID:
             trap_indices = set([19,25,29,35,42,46,49,52,54,59])
     
         # set starting point and ending point (cheese)
-        self.start_pos = (0, 0)
-        self.cheese_pos = (self.grid_dim-1, self.grid_dim-1)     
-
-        # TODO --> Should (0,0) be allowed for a trap position? Probably not if the mouse has to start there
-        #      --> What about the cheese? Is it always at the bottom right?
-        else:
-            trap_indices = set()
-            for i in range(self.num_traps):
-                while (True):
-                    x = np.random.randint(self.grid_dim ** 2)
-                    if (x not in trap_indices):
-                        trap_indices.add(x)
-                        break
-        for i in trap_indices:
-            self.trap_locations[i//self.grid_dim][i%self.grid_dim] = 1
-        print(self.trap_locations)
+        #self.start_pos = (0, 0)
+        #self.cheese_pos = (self.grid_dim-1, self.grid_dim-1)     
 
         # TODO --> Add mouse and cheese locations to the class, differentiate between traps and cheese
     
@@ -65,14 +51,17 @@ class GRID:
 
     # Performs n-step Temporal Difference learning
 #    def sarsa(self):
-        trap_indices = set()
-        while len(trap_indices) < self.num_traps:
-                trap_x = np.random.randint(self.grid_dim)
-                trap_y = np.random.randint(self.grid_dim)
-                loc = (trap_x, trap_y)
-                if (loc != self.start_pos and loc != self.cheese_pos):
-                    if (loc not in trap_indices):
-                        trap_indices.add(loc)
+
+
+        else:
+            trap_indices = set()
+            while len(trap_indices) < self.num_traps:
+                    trap_x = np.random.randint(self.grid_dim)
+                    trap_y = np.random.randint(self.grid_dim)
+                    loc = (trap_x, trap_y)
+                    if (loc != self.START_POS and loc != self.CHEESE_POS):
+                        if (loc not in trap_indices):
+                            trap_indices.add(loc)
 
         for loc in trap_indices:
             x = loc[0]
@@ -81,7 +70,7 @@ class GRID:
         print(self.trap_locations)
 
     def generate_episode(self):
-        mouse_pos = self.start_pos
+        mouse_pos = self.START_POS
 
         while (True):
             a = self.choose_action(mouse_pos)
