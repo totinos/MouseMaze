@@ -27,8 +27,8 @@ class GRID:
             self.num_traps = 10
     
         # set starting point and ending point (cheese)
-        self.start = (0, 0)
-        self.cheese = (self.grid_dim-1, self.grid_dim-1)     
+        self.start_pos = (0, 0)
+        self.cheese_pos = (self.grid_dim-1, self.grid_dim-1)     
 
         # TODO --> Should (0,0) be allowed for a trap position? Probably not if the mouse has to start there
         #      --> What about the cheese? Is it always at the bottom right?
@@ -37,7 +37,7 @@ class GRID:
                 trap_x = np.random.randint(self.grid_dim)
                 trap_y = np.random.randint(self.grid_dim)
                 loc = (trap_x, trap_y)
-                if (loc != self.start and loc != self.cheese):
+                if (loc != self.start_pos and loc != self.cheese_pos):
                     if (loc not in trap_indices):
                         trap_indices.add(loc)
 
@@ -47,7 +47,53 @@ class GRID:
             self.trap_locations[x, y] = 1
         print(self.trap_locations)
 
-   
+    def generate_episode(self):
+        mouse_pos = self.start_pos
+
+        while (True):
+            a = self.choose_action(mouse_pos)
+            # todo: working here, committing after adding the choose_action function
+
+
+    def choose_action(self, pos):
+        action_values = [self.policy[pos[0], pos[1], a] for a in range(0, 4)]
+        max_value = max(action_values)
+        num_max_actions = action_values.count(max_value)
+
+        action = None
+
+        # special case, all actions are considered equal, then epsilon case or not, 
+        # we will select equally among them
+        if num_max_actions == 4:
+            action = np.random.randint(4)
+
+        # else use probability to check for episilon case. if random value is greater than or equal
+        # to epsilon, then we are doing the greedy case
+        elif (np.random.random() >= self.epsilon):
+            # only one optimal action, take it
+            if (num_max_actions == 1):
+                action = action_values.index(max_value)
+            # else multiple optimal actions
+            else:
+                # randomly select which of the optimal values to take
+                max_actions = []
+                for i in range(0, 4):
+                    if action_values[i] == max_value:
+                        max_actions.append(i)
+        
+                action = max_actions[np.random.randint(num_max_actions)]
+
+        # if random test fails, we do the epilon case and choose a random non-optimal action
+        else:
+            non_optimal_actions = []
+            for i in range(0, 4):
+                if action_values[i] != max_value:
+                    non_optimal_actions.append(i)
+            
+            action = non_optimal_actions[np.random.randint(len(non_optimal_actions))]
+
+        return action
+        
 
 if __name__ == "__main__":
 
