@@ -39,25 +39,75 @@ class GRID:
         else:
             trap_indices = set()
             while len(trap_indices) < self.num_traps:
-                    trap_x = np.random.randint(self.grid_dim)
-                    trap_y = np.random.randint(self.grid_dim)
-                    loc = (trap_x, trap_y)
+                    trap_row = np.random.randint(self.grid_dim)
+                    trap_col = np.random.randint(self.grid_dim)
+                    loc = (trap_row, trap_col)
                     if (loc != self.START_POS and loc != self.CHEESE_POS):
                         if (loc not in trap_indices):
                             trap_indices.add(loc)
 
         for loc in trap_indices:
-            x = loc[0]
-            y = loc[1]
-            self.trap_locations[x, y] = 1
+            row = loc[0]
+            col = loc[1]
+            self.trap_locations[row, col] = 1
         print(self.trap_locations)
+
+        # testing
+        self.generate_episode()
 
     def generate_episode(self):
         mouse_pos = self.START_POS
 
+        state_backup = []
+        action_backup = []
+        reward_backup = []
+
+        state_backup.append(mouse_pos)
+
         while (True):
+            print('current state: ', mouse_pos)
+
             a = self.choose_action(mouse_pos)
-            # todo: working here, committing after adding the choose_action function
+            action_backup.append(a)
+
+            print('chosen action: ', a)
+
+            next_pos, reward = self.take_action(mouse_pos, a)
+            state_backup.append(next_pos)
+            reward_backup.append(reward)
+
+            print('reward: ', reward)
+
+            if len(state_backup) > self.num_steps:
+                updated_state = state_backup[0]
+                updated_action = action_backup[0]
+
+                g = 0
+                for i in range(0, self.num_steps):
+                    g += reward_backup[i]
+
+                g += self.action_values[state_backup[-1][0], state_backup[-1][0], action_backup[-1]]
+
+                cur_action_value = self.action_values[updated_state[0], updated_state[1], updated_action]
+
+                self.action_values[updated_state[0], updated_state[1], updated_action] = cur_action_value + self.alpha * (g - cur_action_value)
+
+                del state_backup[0]
+                del action_backup[0]
+                del reward_backup[0]
+
+            # fell in trap
+            if self.trap_locations[next_pos[0], next_pos[1]]:
+                print('fell into a trap, end of episode')
+                return
+
+            # end of episode
+            if next_pos == self.CHEESE_POS:
+                # TODO update all remaining states that haven't reached enough steps to update yet
+                print('found cheese, end of episode')
+                return
+
+            mouse_pos = next_pos
 
 
     def choose_action(self, pos):
@@ -99,6 +149,38 @@ class GRID:
 
         return action
         
+    # returns tuple of (next_pos, reward)
+    # where next_pos is itself a tuple (x, y)
+    def take_action(self, pos, action):
+        row = pos[0]
+        col = pos[1]
+
+        if action == self.UP:
+            if row > 0:
+                row -= 1
+        elif action == self.DOWN:
+            if row < self.grid_dim-1:
+                row += 1
+        elif action == self.LEFT:
+            if col > 0:
+                col -= 1
+        elif action == self.RIGHT:
+            if col < self.grid_dim-1:
+                col += 1
+
+        next_pos = (row, col)
+        reward = 0
+
+        # if next pos is a trap
+        if self.trap_locations[row, col]:
+            reward = 0
+        
+        # if next pos is the goal
+        if self.CHEESE_POS == next_pos:
+            reward = 1
+
+        return next_pos, reward
+
 
 if __name__ == "__main__":
 
