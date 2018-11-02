@@ -150,7 +150,7 @@ class GRID:
         return action
         
     # returns tuple of (next_pos, reward)
-    # where next_pos is itself a tuple (x, y)
+    # where next_pos is itself a tuple (row, col)
     def take_action(self, pos, action):
         row = pos[0]
         col = pos[1]
