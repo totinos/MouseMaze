@@ -53,7 +53,8 @@ class GRID:
         print(self.trap_locations)
 
         # testing
-        self.generate_episode()
+        while True:
+            self.generate_episode()
 
     def generate_episode(self):
         mouse_pos = self.START_POS
@@ -65,18 +66,14 @@ class GRID:
         state_backup.append(mouse_pos)
 
         while (True):
-            print('current state: ', mouse_pos)
+            #print('current state: ', mouse_pos)
 
             a = self.choose_action(mouse_pos)
             action_backup.append(a)
 
-            print('chosen action: ', a)
+            #print('chosen action: ', a)
 
             next_pos, reward = self.take_action(mouse_pos, a)
-            state_backup.append(next_pos)
-            reward_backup.append(reward)
-
-            print('reward: ', reward)
 
             if len(state_backup) > self.num_steps:
                 updated_state = state_backup[0]
@@ -86,25 +83,60 @@ class GRID:
                 for i in range(0, self.num_steps):
                     g += reward_backup[i]
 
-                g += self.action_values[state_backup[-1][0], state_backup[-1][0], action_backup[-1]]
+                g += self.action_values[state_backup[-1][0], state_backup[-1][1], action_backup[-1]]
 
                 cur_action_value = self.action_values[updated_state[0], updated_state[1], updated_action]
 
                 self.action_values[updated_state[0], updated_state[1], updated_action] = cur_action_value + self.alpha * (g - cur_action_value)
 
+                self.update_policy(updated_state)
+
+                if g != 0 or next_pos == self.CHEESE_POS:
+                    print('state backup:\n', state_backup)
+                    print('action backup:\n', action_backup)
+                    print('reward backup:\n', reward_backup)
+                    print('updating state', updated_state, 'and action', updated_action, 'with action value', cur_action_value, 'with return', g)
+                    print(self.action_values)
+                    print(self.policy)
                 del state_backup[0]
                 del action_backup[0]
                 del reward_backup[0]
 
+
+            state_backup.append(next_pos)
+            reward_backup.append(reward)
+
+            #print('reward: ', reward)
+
+
             # fell in trap
             if self.trap_locations[next_pos[0], next_pos[1]]:
-                print('fell into a trap, end of episode')
+                #print('fell into a trap, end of episode')
                 return
 
             # end of episode
             if next_pos == self.CHEESE_POS:
-                # TODO update all remaining states that haven't reached enough steps to update yet
+                # TODO: need to fix this function
+                # Update all remaining states that haven't reached enough steps to update yet
+                for i in range(0, len(state_backup)-1):
+                    g = 0
+                    updated_state = state_backup[i]
+                    updated_action = action_backup[i]
+
+                    for j in range(i, len(state_backup)-1):
+                        g += reward_backup[j]
+                    if i != len(state_backup)-1:
+                        g += self.action_values[updated_state[0], updated_state[1], updated_action]
+
+                    cur_action_value = self.action_values[updated_state[0], updated_state[1], updated_action]
+                    
+                    self.action_values[updated_state[0], updated_state[1], updated_action] = cur_action_value + self.alpha * (g - cur_action_value)
+
+                    self.update_policy(updated_state)
+
+
                 print('found cheese, end of episode')
+                print(self.action_values)
                 return
 
             mouse_pos = next_pos
@@ -181,6 +213,30 @@ class GRID:
 
         return next_pos, reward
 
+    def update_policy(self, pos):
+        action_values = [self.action_values[pos[0], pos[1], a] for a in range(0, 4)]
+
+        max_value = max(action_values)
+        num_max_actions = action_values.count(max_value)
+
+        # only one maximum action
+        if (num_max_actions == 1):
+            max_a = action_values.index(max_value)
+            for a in range(0, 4):
+                if a == max_a:
+                    self.policy[pos[0], pos[1], a] = 1
+                else:
+                    self.policy[pos[0], pos[1], a] = 0
+        # multiple max actions
+        else:
+            p = 1 / num_max_actions
+
+            for a in range(0, 4):
+                if action_values[a] == max_value:
+                    self.policy[pos[0], pos[1], a] = p
+                else:
+                    self.policy[pos[0], pos[1], a] = 0
+        
 
 if __name__ == "__main__":
 
