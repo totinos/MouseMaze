@@ -4,7 +4,7 @@ import numpy as np
 
 class GRID:
 
-    def __init__(self, grid_dim, num_traps, num_steps, alpha, discount, epsilon):
+    def __init__(self, grid_dim, num_traps, num_steps, alpha, discount, epsilon, trap_reward, cheese_reward):
 
         # Copy the problem parameters into class variables
         self.grid_dim = grid_dim
@@ -13,6 +13,8 @@ class GRID:
         self.alpha = alpha
         self.discount = discount
         self.epsilon = epsilon
+        self.trap_reward = trap_reward
+        self.cheese_reward = cheese_reward
 
         # Use explicit names for the different actions for clarity
         self.UP = 0
@@ -55,6 +57,7 @@ class GRID:
         # testing
         while True:
             self.generate_episode()
+            exit(1)
 
     def generate_episode(self):
         mouse_pos = self.START_POS
@@ -66,12 +69,12 @@ class GRID:
         state_backup.append(mouse_pos)
 
         while (True):
-            #print('current state: ', mouse_pos)
+            print('current state: ', mouse_pos)
 
             a = self.choose_action(mouse_pos)
             action_backup.append(a)
 
-            #print('chosen action: ', a)
+            print('chosen action: ', a)
 
             next_pos, reward = self.take_action(mouse_pos, a)
 
@@ -106,12 +109,12 @@ class GRID:
             state_backup.append(next_pos)
             reward_backup.append(reward)
 
-            #print('reward: ', reward)
+            print('reward: ', reward)
 
 
             # fell in trap
             if self.trap_locations[next_pos[0], next_pos[1]]:
-                #print('fell into a trap, end of episode')
+                print('fell into a trap, end of episode')
                 return
 
             # end of episode
@@ -143,6 +146,8 @@ class GRID:
 
 
     def choose_action(self, pos):
+
+        # TODO --> Shouldn't action values use the self.action_values 
         action_values = [self.policy[pos[0], pos[1], a] for a in range(0, 4)]
         max_value = max(action_values)
         num_max_actions = action_values.count(max_value)
@@ -205,11 +210,11 @@ class GRID:
 
         # if next pos is a trap
         if self.trap_locations[row, col]:
-            reward = 0
+            reward = self.trap_reward
         
         # if next pos is the goal
         if self.CHEESE_POS == next_pos:
-            reward = 1
+            reward = self.cheese_reward
 
         return next_pos, reward
 
@@ -260,4 +265,4 @@ if __name__ == "__main__":
 
     # Create the grid for the problem
     # TODO --> Create a grid
-    grid = GRID(grid_dim, num_traps, num_steps, alpha, discount, epsilon)
+    grid = GRID(grid_dim, num_traps, num_steps, alpha, discount, epsilon, 0, 1)
