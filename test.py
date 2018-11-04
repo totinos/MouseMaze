@@ -52,11 +52,48 @@ class GRID:
             self.trap_locations[row, col] = 1
         print(self.trap_locations)
 
+        # Add arrays to keep track of plotting information
+        self.avg_reward = []
+        self.avg_length = []
+
         ####################### TESTING ######################
-        #self.sarsa(5000)
-        self.n_step_sarsa(10000)
+        # Set the number of steps, reset the action values and policy, and then run algorithm
+        # self.sarsa(5000)
+        self.num_steps = 1
+        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
+        self.n_step_sarsa(5000)
+        self.num_steps = 2
+        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
+        self.n_step_sarsa(5000)
+        self.num_steps = 4
+        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
+        self.n_step_sarsa(5000)
+        self.num_steps = 8
+        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
+        self.n_step_sarsa(5000)
+        self.num_steps = 16
+        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
+        self.n_step_sarsa(5000)
+        self.plot_learning()
 
     def sarsa(self, num_episodes):
+        """Performs one-step on-policy SARSA for a given number of episodes.
+
+        Uses a single-step temporal difference reinforcement learning
+        algorithm, SARSA, to update the action values for each of the
+        different states of the problem. Also tracks episode length and
+        reward so that they can be displayed graphically to the user.
+
+        Args:
+            num_episodes (int): The number of episodes to generate
+
+        """
+
 
         # Keep track of learning statistics
         episode_lengths = np.zeros(num_episodes)
@@ -73,7 +110,6 @@ class GRID:
 
             # Reset to starting position and choose the first action
             state = self.START_POS
-            #action_probs = self.policy(state[0], state[1])
             action = self.choose_action(state)
 
             # One step in the environment
@@ -113,14 +149,24 @@ class GRID:
             avg_reward[episode] = reward_total / (episode + 1)
             avg_length[episode] = length_total / (episode + 1)
 
-        self.plot_learning(episode_lengths, episode_rewards, avg_length, avg_reward)
-
+        # Add to class episode information
+        self.avg_reward.append(avg_reward)
+        self.avg_length.append(avg_length)
         return
 
     
-
-
     def n_step_sarsa(self, num_episodes):
+        """Performs n-step on-policy SARSA for a given number of episodes.
+
+        Performs n-step temporal difference reinforcement learning
+        algorithm, n-step SARSA, to update the action values for each of the
+        different states of the problem. Also tracks episode length and reward
+        so that they can be displayed graphically to the user.
+
+        Args:
+            num_episodes (int): The number of episodes to generate
+
+        """
 
         # Keep track of learning statistics
         episode_lengths = np.zeros(num_episodes)
@@ -132,6 +178,7 @@ class GRID:
 
         for episode in range(num_episodes):
 
+            # Update the user on training progress
             if ((episode + 1) % 1000 == 0):
                 print('Episode {0}/{1}.'.format(episode+1, num_episodes))
 
@@ -143,9 +190,6 @@ class GRID:
             state = self.START_POS
             action = self.choose_action(state)
 
-
-
-
             # Initialize time step and set episode length
             time = 0
             end_time = float('inf')
@@ -154,14 +198,13 @@ class GRID:
                 # Advance to the next time step
                 time += 1
 
-                #print('state:', state)
-                #print('action', action)
-
+                # Generate new states/actions until terminal state reached
                 if (time < end_time):
 
                     # Take a step in the episode
                     next_state, reward, terminal = self.take_action(state, action)
 
+                    # Store episode information for n-step calculation
                     stored_states[time%self.num_steps] = state
                     stored_actions[time%self.num_steps] = action
                     stored_rewards[time%self.num_steps] = reward
@@ -179,18 +222,14 @@ class GRID:
 
                 
                 update_time = time - self.num_steps
-                if (update_time >= 0):
+                if (update_time > 0):
                     returns = 0
-
-                    print('time:', time)
-                    print('T:', end_time)
-                    print('update_time:', update_time)
 
                     # Sum the returns for the next n steps or until episode end
                     for t in range(update_time, min(end_time, update_time + self.num_steps)):
-                        print('t:', t, ' t%n:', t%self.num_steps)
+                        # print('t:', t, ' t%n:', t%self.num_steps)
                         returns += (self.discount ** (t - update_time)) * stored_rewards[t%self.num_steps]
-                        #print('t:', t, ' return:', returns)
+                        # print('t:', t, ' return:', returns)
                     if (update_time + self.num_steps <= end_time):
                         returns += (self.discount ** self.num_steps) * self.action_values[next_state[0], next_state[1], next_action]
 
@@ -214,16 +253,27 @@ class GRID:
             avg_reward[episode] = reward_total / (episode + 1)
             avg_length[episode] = length_total / (episode + 1)
 
-        self.plot_learning(episode_lengths, episode_rewards, avg_length, avg_reward)
-        
+        # Add to class episode information
+        self.avg_reward.append(avg_reward)
+        self.avg_length.append(avg_length)
         return
 
 
     def update_policy(self, pos):
+        """Updates the policy to be epsilon-greedy based on action values.
+
+        Uses the action values stored by the class to determine the epsilon-
+        greedy policy update. If there is more than one best action, they are
+        all weighted equally.
+
+        Args:
+            pos (tuple): pos[0] is current row, pos[1] is current column.
+
+        """
+
         action_values = np.array([self.action_values[pos[0], pos[1], a] for a in range(4)])
         best_actions = (action_values == np.amax(action_values))
         num_best = np.sum(best_actions)
-        #print(best_actions)
 
         for a in range(4):
             if (num_best == 4):
@@ -235,30 +285,21 @@ class GRID:
         return
 
     def choose_action(self, pos):
+        """Choose an action based on the current policy.
+
+        Chooses an action based on the probabilites of the different actions
+        from the current state.
+
+        Args:
+            pos (tuple): pos[0] is current row, pos[1] is current column.
+
+        Returns:
+            action (int): The index corresponding to the chosen action from
+                          the current state.
+        """
 
         action_probs = [self.policy[pos[0], pos[1], a] for a in range(4)]
-        #print('length of action probabilities', len(action_probs))
-        #print(action_probs)
         return np.random.choice(4, p=action_probs)
-
-        actions = [self.policy[pos[0], pos[1], a] for a in range(4)]
-        action_values = np.array([self.action_values[pos[0], pos[1], a] for a in range(4)])
-        best_actions = (action_values == np.amax(action_values))
-        num_best = np.sum(best_actions)
-
-        # If all actions are equal, choose randomly between them
-        if (num_best == 4):
-            return np.random.randint(len(actions))
-
-        # If explore option taken, then choose a random non-optimal action
-        elif (np.random.binomial(1, self.epsilon) == 1):
-            non_optimal = [a for a in range(4) if (best_actions[a] != True)]
-            return non_optimal[np.random.randint(len(non_optimal))]
-
-        # Otherwise randomly choose from the optimal actions
-        else:
-            optimal = [a for a in range(4) if (best_actions[a] == True)]
-            return optimal[np.random.randint(len(optimal))]
 
             
     # returns tuple of (next_pos, reward)
@@ -297,35 +338,27 @@ class GRID:
         return next_pos, reward, terminal
 
 
-    def plot_learning(self, episode_lengths, episode_rewards, avg_length, avg_reward):
-        print('----------  POLICY  ----------')
-        print(self.policy)
-        print('---------- Q VALUES ----------')
-        print(self.action_values)
+    def plot_learning(self):
+        # print('----------  POLICY  ----------')
+        # print(self.policy)
+        # print('---------- Q VALUES ----------')
+        # print(self.action_values)
 
         plt.figure()
-        plt.plot(episode_lengths)
-        plt.title('Episode Lengths')
-        plt.xlabel('Episode')
-        plt.ylabel('Length of Episode')
-
-        plt.figure()
-        plt.plot(episode_rewards)
-        plt.title('Episode Rewards')
-        plt.xlabel('Episode')
-        plt.ylabel('Reward of Episode')
-
-        plt.figure()
-        plt.plot(avg_length)
+        for i in range(len(self.avg_length)):
+            plt.plot(self.avg_length[i], label='{0}-step'.format(i))
         plt.title('Average Episode Length')
         plt.xlabel('Number of Episodes')
         plt.ylabel('Average Episode Length')
+        plt.legend(loc='upper right')
 
         plt.figure()
-        plt.plot(avg_reward)
+        for i in range(len(self.avg_reward)):
+            plt.plot(self.avg_reward[i], label='{0}-step'.format(i))
         plt.title('Average Episode Reward')
         plt.xlabel('Number of Episodes')
         plt.ylabel('Average Episode Reward')
+        plt.legend(loc='upper left')
 
         plt.show()
         return
