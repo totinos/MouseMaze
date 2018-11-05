@@ -63,19 +63,19 @@ class GRID:
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
         self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
         self.n_step_sarsa(5000)
-        self.num_steps = 2
+        # self.num_steps = 2
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
         self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
         self.n_step_sarsa(5000)
-        self.num_steps = 4
+        # self.num_steps = 4
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
         self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
         self.n_step_sarsa(5000)
-        self.num_steps = 8
+        # self.num_steps = 8
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
         self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
         self.n_step_sarsa(5000)
-        self.num_steps = 16
+        # self.num_steps = 16
         self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
         self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
         self.n_step_sarsa(5000)
@@ -154,7 +154,6 @@ class GRID:
         self.avg_length.append(avg_length)
         return
 
-    
     def n_step_sarsa(self, num_episodes):
         """Performs n-step on-policy SARSA for a given number of episodes.
 
@@ -227,9 +226,7 @@ class GRID:
 
                     # Sum the returns for the next n steps or until episode end
                     for t in range(update_time, min(end_time, update_time + self.num_steps)):
-                        # print('t:', t, ' t%n:', t%self.num_steps)
                         returns += (self.discount ** (t - update_time)) * stored_rewards[t%self.num_steps]
-                        # print('t:', t, ' return:', returns)
                     if (update_time + self.num_steps <= end_time):
                         returns += (self.discount ** self.num_steps) * self.action_values[next_state[0], next_state[1], next_action]
 
@@ -257,7 +254,6 @@ class GRID:
         self.avg_reward.append(avg_reward)
         self.avg_length.append(avg_length)
         return
-
 
     def update_policy(self, pos):
         """Updates the policy to be epsilon-greedy based on action values.
@@ -336,7 +332,6 @@ class GRID:
             terminal = True
 
         return next_pos, reward, terminal
-
 
     def plot_learning(self):
         # print('----------  POLICY  ----------')
