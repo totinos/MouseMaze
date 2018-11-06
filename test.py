@@ -282,6 +282,113 @@ class GRID:
         # self.avg_length.append(avg_length)
         return
 
+    def monte_carlo(self, num_episodes):
+        # Keep track of learning statistics
+        episode_lengths = np.zeros(num_episodes)
+        episode_rewards = np.zeros(num_episodes)
+        avg_reward = np.zeros(num_episodes)
+        avg_length = np.zeros(num_episodes)
+        reward_total = 0
+        length_total = 0
+
+        for episode in range(num_episodes):
+
+            if ((episode + 1) % 1000 == 0):
+                print('Episode {0}/{1}.'.format(episode+1, num_episodes))
+
+            # backup tree
+            stored_states = {}
+            stored_actions = {}
+            stored_rewards = {}
+
+            # Reset to starting position and choose the first action
+            state = self.START_POS
+            action = self.choose_action(state)
+
+            # One step in the environment
+            t = 0
+            while (True):
+
+                stored_states[t] = state
+                stored_actions[t] = action
+
+                #print('state:', state)
+                #print('action', action)
+
+                # Take a step in the episode
+                next_state, reward, terminal = self.take_action(state, action)
+
+                # Determine the next action
+                next_action = self.choose_action(next_state)
+
+                stored_rewards[t] = reward
+                stored_states[t+1] = next_state
+                stored_actions[t+1] = next_action
+
+                # Update the episode information
+                episode_lengths[episode] = t
+                episode_rewards[episode] += reward
+
+                # Check to see if the end of the episode has been reached
+                if (terminal):
+                    
+                    self.every_visit = False # TODO: move this elsewhere
+
+                    # MC update (every visit)
+                    if (self.every_visit):
+                        for i in range(0, t+1):
+                            updated_state = stored_states[i]
+                            updated_action = stored_actions[i]
+
+                            # calculate return from this state
+                            g = 0
+                            for j in range(i, t+1):
+                                g = g + stored_rewards[j] * pow(self.discount, (j-i))
+
+                            # Q(s, a) <-- Q(s, a) + alpha * [g - Q(s, a)]
+                            current_value = self.action_values[updated_state[0], updated_state[1], updated_action]
+                            self.action_values[updated_state[0], updated_state[1], updated_action] += self.alpha * (g - current_value)
+                            self.update_policy(updated_state)
+
+                    # MC update (first visit)
+                    else:
+                        visited = {}
+                        for i in range(0, t+1):
+                            updated_state = stored_states[i]
+                            updated_action = stored_actions[i]
+
+                            if (updated_state, updated_action) in visited.keys():
+                                continue
+
+                            visited[(updated_state, updated_action)] = True
+
+                            # calculate return from this state
+                            g = 0
+                            for j in range(i, t+1):
+                                g = g + stored_rewards[j] * pow(self.discount, (j-i))
+
+                            # Q(s, a) <-- Q(s, a) + alpha * [g - Q(s, a)]
+                            current_value = self.action_values[updated_state[0], updated_state[1], updated_action]
+                            self.action_values[updated_state[0], updated_state[1], updated_action] += self.alpha * (g - current_value)
+                            self.update_policy(updated_state)
+
+                    break
+
+                action = next_action
+                state = next_state
+                t += 1
+
+            # Update the learning statistics
+            reward_total += episode_rewards[episode]
+            length_total += episode_lengths[episode]
+            avg_reward[episode] = reward_total / (episode + 1)
+            avg_length[episode] = length_total / (episode + 1)
+
+        # Add to class episode information
+        self.avg_reward.append(avg_reward)
+        self.avg_length.append(avg_length)
+        return
+
     def update_policy(self, pos):
         """Updates the policy to be epsilon-greedy based on action values.
 
