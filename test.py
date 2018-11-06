@@ -53,33 +53,60 @@ class GRID:
         print(self.trap_locations)
 
         # Add arrays to keep track of plotting information
-        self.avg_reward = []
-        self.avg_length = []
+        # self.avg_reward = []
+        # self.avg_length = []
 
         ####################### TESTING ######################
-        # Set the number of steps, reset the action values and policy, and then run algorithm
-        # self.sarsa(5000)
-        self.num_steps = 1
-        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
-        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
-        self.n_step_sarsa(5000)
-        # self.num_steps = 2
-        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
-        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
-        self.n_step_sarsa(5000)
-        # self.num_steps = 4
-        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
-        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
-        self.n_step_sarsa(5000)
-        # self.num_steps = 8
-        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
-        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
-        self.n_step_sarsa(5000)
-        # self.num_steps = 16
-        self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
-        self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
-        self.n_step_sarsa(5000)
-        self.plot_learning()
+        
+        # Iterate over all step sizes
+        num_episodes = 5000
+        num_steps = [1, 2, 4, 8, 16]
+        step_reward_averages = []
+        step_length_averages = []
+
+        for n in num_steps:
+            self.num_steps = n
+            self.avg_reward = np.zeros(num_episodes)
+            self.avg_length = np.zeros(num_episodes)
+
+            # Average results over 10 runs each
+            for i in range(100):
+                # Set the number of steps, reset the action values and policy, and then run algorithm
+                self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
+                self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
+                self.n_step_sarsa(num_episodes)
+            print('len(al)', len(self.avg_length))
+            print('len(ar)', len(self.avg_reward))
+            print('shape of avg_reward', np.shape(self.avg_reward))
+            print('shape of avg_length', np.shape(self.avg_length))
+            step_reward_averages.append(self.avg_reward.copy())
+            step_length_averages.append(self.avg_length.copy())
+        print(len(step_reward_averages))
+
+        # Plot the average reward for all of the different step sizes
+        plt.figure()
+        for n in range(len(step_reward_averages)):
+            # Average all of the values
+            np.true_divide(step_reward_averages[n], num_episodes)
+            plt.plot(step_reward_averages[n], label='{0}-step'.format(2**n))
+        plt.legend(loc='upper left')
+        plt.title('Average of Averaged Episode Rewards')
+        plt.xlabel('Number of Episodes')
+        plt.ylabel('Average Episode Reward')
+
+        # Plot the average length for all of the different step sizes
+        plt.figure()
+        for n in range(len(step_length_averages)):
+            # Average all of the values
+            np.true_divide(step_length_averages[n], num_episodes)
+            plt.plot(step_length_averages[n], label='{0}-step'.format(2**n))
+        plt.legend(loc='upper right')
+        plt.title('Average of Averaged Episode Lengths')
+        plt.xlabel('Number of Episodes')
+        plt.ylabel('Average Episode Length')
+
+        plt.show()
+
 
     def sarsa(self, num_episodes):
         """Performs one-step on-policy SARSA for a given number of episodes.
@@ -105,8 +132,8 @@ class GRID:
 
         for episode in range(num_episodes):
 
-            if ((episode + 1) % 1000 == 0):
-                print('Episode {0}/{1}.'.format(episode+1, num_episodes))
+            # if ((episode + 1) % 1000 == 0):
+            #     print('Episode {0}/{1}.'.format(episode+1, num_episodes))
 
             # Reset to starting position and choose the first action
             state = self.START_POS
@@ -178,8 +205,8 @@ class GRID:
         for episode in range(num_episodes):
 
             # Update the user on training progress
-            if ((episode + 1) % 1000 == 0):
-                print('Episode {0}/{1}.'.format(episode+1, num_episodes))
+            # if ((episode + 1) % 1000 == 0):
+            #     print('Episode {0}/{1}.'.format(episode+1, num_episodes))
 
             stored_states = {}
             stored_actions = {}
@@ -247,12 +274,12 @@ class GRID:
             # Update the learning statistics
             reward_total += episode_rewards[episode]
             length_total += episode_lengths[episode]
-            avg_reward[episode] = reward_total / (episode + 1)
-            avg_length[episode] = length_total / (episode + 1)
+            self.avg_reward[episode] += reward_total / (episode + 1)
+            self.avg_length[episode] += length_total / (episode + 1)
 
         # Add to class episode information
-        self.avg_reward.append(avg_reward)
-        self.avg_length.append(avg_length)
+        # self.avg_reward.append(avg_reward)
+        # self.avg_length.append(avg_length)
         return
 
     def update_policy(self, pos):
