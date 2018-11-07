@@ -485,12 +485,12 @@ class GRID:
 
         # if next pos is a trap
         if self.trap_locations[row, col]:
-            reward = self.trap_reward
+            reward += self.trap_reward
             terminal = True
         
         # if next pos is the goal
         if self.CHEESE_POS == next_pos:
-            reward = self.cheese_reward
+            reward += self.cheese_reward
             terminal = True
 
         return next_pos, reward, terminal
