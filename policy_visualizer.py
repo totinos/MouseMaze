@@ -3,11 +3,11 @@ from PIL import Image, ImageTk
 
 root = tk.Tk()
 
+# Set up the width and height of each tile
 image_w = 100
 image_h = 100
 
 # Read in all of the images to create the grid
-
 file = 'Images/jerry.jpg'
 image = Image.open(file)
 jerry = ImageTk.PhotoImage(image.resize((image_w, image_h)))
@@ -78,7 +78,6 @@ im_1111 = ImageTk.PhotoImage(image.resize((image_w, image_h)))
 
 
 # Read the policy to visualize from a file
-
 filename = 'policy_out'
 with open(filename, 'r') as f:
 	lines = f.readlines()

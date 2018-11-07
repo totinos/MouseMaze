@@ -53,59 +53,53 @@ class GRID:
         print(self.trap_locations)
 
         # Add arrays to keep track of plotting information
-        # self.avg_reward = []
-        # self.avg_length = []
+        self.step_reward_averages = []
+        self.step_length_averages = []
 
-        ####################### TESTING ######################
-        
+        ##############################################################
+        ##########                                          ##########
+        ########## FOR NOW USING THIS TO EXECUTE ALGORITHMS ##########
+        ##########                                          ##########
+        ##############################################################
+
         # Iterate over all step sizes
-        num_episodes = 5000
-        num_steps = [1, 2, 4, 8, 16]
-        step_reward_averages = []
-        step_length_averages = []
+        num_runs = 15
+        num_episodes = 10000
+        num_steps = [1, 2, 4, 8, 16, float('inf')]
 
         for n in num_steps:
+
+            # Set up arrays to store averaged results
             self.num_steps = n
             self.avg_reward = np.zeros(num_episodes)
             self.avg_length = np.zeros(num_episodes)
 
-            # Average results over 10 runs each
-            for i in range(100):
-                # Set the number of steps, reset the action values and policy, and then run algorithm
+            # Average results over some number of runs
+            print('\n>>> Beginning first of {0} runs. <<<\n'.format(num_runs))
+            for i in range(num_runs):
+
+                print('---------- RUN {0} ----------'.format(i+1))
+
+                # Reset the action values and policy, then run algorithm
                 self.action_values = np.zeros((self.grid_dim, self.grid_dim, 4))
                 self.policy = np.ones((self.grid_dim, self.grid_dim, 4))*0.25
-                self.n_step_sarsa(num_episodes)
-            print('len(al)', len(self.avg_length))
-            print('len(ar)', len(self.avg_reward))
-            print('shape of avg_reward', np.shape(self.avg_reward))
-            print('shape of avg_length', np.shape(self.avg_length))
-            step_reward_averages.append(self.avg_reward.copy())
-            step_length_averages.append(self.avg_length.copy())
-        print(len(step_reward_averages))
+                
+                # Run Monte Carlo algorithm for n = infinity
+                if (self.num_steps == float('inf')):
+                    self.monte_carlo(num_episodes)
 
-        # Plot the average reward for all of the different step sizes
-        plt.figure()
-        for n in range(len(step_reward_averages)):
-            # Average all of the values
-            np.true_divide(step_reward_averages[n], num_episodes)
-            plt.plot(step_reward_averages[n], label='{0}-step'.format(2**n))
-        plt.legend(loc='upper left')
-        plt.title('Average of Averaged Episode Rewards')
-        plt.xlabel('Number of Episodes')
-        plt.ylabel('Average Episode Reward')
+                # Run n-step SARSA algorithm for other values of n
+                else:
+                    self.n_step_sarsa(num_episodes)
 
-        # Plot the average length for all of the different step sizes
-        plt.figure()
-        for n in range(len(step_length_averages)):
-            # Average all of the values
-            np.true_divide(step_length_averages[n], num_episodes)
-            plt.plot(step_length_averages[n], label='{0}-step'.format(2**n))
-        plt.legend(loc='upper right')
-        plt.title('Average of Averaged Episode Lengths')
-        plt.xlabel('Number of Episodes')
-        plt.ylabel('Average Episode Length')
+            self.step_reward_averages.append(self.avg_reward.copy())
+            self.step_length_averages.append(self.avg_length.copy())
 
-        plt.show()
+        self.plot_learning(num_runs, num_episodes)
+        self.export_policy()
+
+
+        
 
 
     def sarsa(self, num_episodes):
@@ -125,15 +119,15 @@ class GRID:
         # Keep track of learning statistics
         episode_lengths = np.zeros(num_episodes)
         episode_rewards = np.zeros(num_episodes)
-        avg_reward = np.zeros(num_episodes)
-        avg_length = np.zeros(num_episodes)
+        # avg_reward = np.zeros(num_episodes)
+        # avg_length = np.zeros(num_episodes)
         reward_total = 0
         length_total = 0
 
         for episode in range(num_episodes):
 
-            # if ((episode + 1) % 1000 == 0):
-            #     print('Episode {0}/{1}.'.format(episode+1, num_episodes))
+            if ((episode + 1) % 1000 == 0):
+                print('Episode {0}/{1}.'.format(episode+1, num_episodes))
 
             # Reset to starting position and choose the first action
             state = self.START_POS
@@ -173,12 +167,13 @@ class GRID:
             # Update the learning statistics
             reward_total += episode_rewards[episode]
             length_total += episode_lengths[episode]
-            avg_reward[episode] = reward_total / (episode + 1)
-            avg_length[episode] = length_total / (episode + 1)
+            self.avg_reward[episode] += reward_total / (episode + 1)
+            self.avg_length[episode] += length_total / (episode + 1)
+
 
         # Add to class episode information
-        self.avg_reward.append(avg_reward)
-        self.avg_length.append(avg_length)
+        # self.avg_reward.append(avg_reward)
+        # self.avg_length.append(avg_length)
         return
 
     def n_step_sarsa(self, num_episodes):
@@ -197,16 +192,16 @@ class GRID:
         # Keep track of learning statistics
         episode_lengths = np.zeros(num_episodes)
         episode_rewards = np.zeros(num_episodes)
-        avg_reward = np.zeros(num_episodes)
-        avg_length = np.zeros(num_episodes)
+        # avg_reward = np.zeros(num_episodes)
+        # avg_length = np.zeros(num_episodes)
         reward_total = 0
         length_total = 0
 
         for episode in range(num_episodes):
 
             # Update the user on training progress
-            # if ((episode + 1) % 1000 == 0):
-            #     print('Episode {0}/{1}.'.format(episode+1, num_episodes))
+            if ((episode + 1) % 1000 == 0):
+                print('Episode {0}/{1}.'.format(episode+1, num_episodes))
 
             stored_states = {}
             stored_actions = {}
@@ -286,8 +281,8 @@ class GRID:
         # Keep track of learning statistics
         episode_lengths = np.zeros(num_episodes)
         episode_rewards = np.zeros(num_episodes)
-        avg_reward = np.zeros(num_episodes)
-        avg_length = np.zeros(num_episodes)
+        # avg_reward = np.zeros(num_episodes)
+        # avg_length = np.zeros(num_episodes)
         reward_total = 0
         length_total = 0
 
@@ -381,12 +376,12 @@ class GRID:
             # Update the learning statistics
             reward_total += episode_rewards[episode]
             length_total += episode_lengths[episode]
-            avg_reward[episode] = reward_total / (episode + 1)
-            avg_length[episode] = length_total / (episode + 1)
+            self.avg_reward[episode] += reward_total / (episode + 1)
+            self.avg_length[episode] += length_total / (episode + 1)
 
         # Add to class episode information
-        self.avg_reward.append(avg_reward)
-        self.avg_length.append(avg_length)
+        # self.avg_reward.append(avg_reward)
+        # self.avg_length.append(avg_length)
         return
 
     def update_policy(self, pos):
@@ -467,29 +462,94 @@ class GRID:
 
         return next_pos, reward, terminal
 
-    def plot_learning(self):
-        # print('----------  POLICY  ----------')
-        # print(self.policy)
-        # print('---------- Q VALUES ----------')
-        # print(self.action_values)
+    def plot_learning(self, num_runs=1, num_episodes=1000, MC=False):
+        """Plots the class' stored average episode reward and length.
 
-        plt.figure()
-        for i in range(len(self.avg_length)):
-            plt.plot(self.avg_length[i], label='{0}-step'.format(i))
-        plt.title('Average Episode Length')
-        plt.xlabel('Number of Episodes')
-        plt.ylabel('Average Episode Length')
-        plt.legend(loc='upper right')
+        Plots the average episode reward for all different step sizes used for
+        a given number of episodes, averaged again over a certain number of
+        runs.
 
+        Args:
+            num_runs (int):     The number of runs over which to average the
+                                data.
+            MC (boolean):       Denotes whether the data to plot is from a
+                                Monte Carlo simulation or from n-step SARSA.
+        """
+
+        print(num_runs)
+
+        # Plot the average reward for all of the different step sizes
         plt.figure()
-        for i in range(len(self.avg_reward)):
-            plt.plot(self.avg_reward[i], label='{0}-step'.format(i))
-        plt.title('Average Episode Reward')
+        for n in range(len(self.step_reward_averages)):
+            # Average all of the values
+            y_vals = np.true_divide(self.step_reward_averages[n], num_runs)
+            if (MC):
+                plt.plot(y_vals, label='MC')
+            else:
+                plt.plot(y_vals, label='{0}-step'.format(2**n))
+        plt.legend(loc='upper left')
+        plt.title('Average of Averaged Episode Rewards')
         plt.xlabel('Number of Episodes')
         plt.ylabel('Average Episode Reward')
-        plt.legend(loc='upper left')
+
+        # Plot the average length for all of the different step sizes
+        plt.figure()
+        for n in range(len(self.step_length_averages)):
+            # Average all of the values
+            y_vals = np.true_divide(self.step_length_averages[n], num_runs)
+            if (MC):
+                plt.plot(y_vals, label='MC')
+            else:
+                plt.plot(y_vals, label='{0}-step'.format(2**n))
+        plt.legend(loc='upper right')
+        plt.title('Average of Averaged Episode Lengths')
+        plt.xlabel('Number of Episodes')
+        plt.ylabel('Average Episode Length')
 
         plt.show()
+        return
+
+    def export_policy(self):
+        """Exports the policy to be interpreted by a visualizer.
+
+        Exports the policy maintained by the class in a format that can be
+        interpreted by a visualizer script. The format is simple. The first
+        line of the file contains the number of rows and number of columns
+        separated by a space. The remaining lines move sequentially through
+        the possible row, column combinations and contain the string 'Trap',
+        the string 'Cheese', or an integer which is a bitmask for the four
+        possible actions from a state. From most significant bit to least
+        significant bit, the mask is of the form: <LEFT DOWN RIGHT UP>. For
+        example, the mask 1010 (integer 10) means the agent can move left or
+        right, but not down or up.
+        """
+
+        filename = 'policy_out'
+        with open(filename, 'w') as of:
+
+            # Write the grid dimensions to the output file
+            of.write('{0} {0}\n'.format(self.grid_dim))
+
+            # Write all of the policy values to the file
+            for r in range(self.grid_dim):
+                for c in range(self.grid_dim):
+
+                    if (self.trap_locations[r, c] == 1):
+                        of.write('Trap\n')
+                    elif ((r, c) == self.CHEESE_POS):
+                        of.write('Cheese\n')
+                    else:
+                        action_probs = np.array([self.policy[r, c, a] for a in range(4)])
+                        best_actions = (action_probs == np.amax(action_probs))
+                        
+                        # Find the best actions bitmask
+                        # The bits are in the order LDRU
+                        mask = 0
+                        for a in range(4):
+                            if (best_actions[a] == 1):
+                                mask |= (1 << a)
+
+                        of.write('{0}\n'.format(mask))
         return
         
 
