@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class GRID:
 
-    def __init__(self, grid_dim, num_traps, num_steps, alpha, discount, epsilon, trap_reward, cheese_reward):
+    def __init__(self, grid_dim=8, num_traps=-1, num_steps=1, alpha=0.1, discount=1, epsilon=0.01, trap_reward=0, cheese_reward=1, step_reward=0):
 
         # Copy the problem parameters into class variables
         self.grid_dim = grid_dim
@@ -16,6 +16,8 @@ class GRID:
         self.epsilon = epsilon
         self.trap_reward = trap_reward
         self.cheese_reward = cheese_reward
+        self.step_reward = step_reward
+
 
         # Use explicit names for the different actions for clarity
         self.UP = 0
@@ -63,9 +65,11 @@ class GRID:
         ##############################################################
 
         # Iterate over all step sizes
-        num_runs = 15
+        num_runs = 1
         num_episodes = 10000
-        num_steps = [1, 2, 4, 8, 16, float('inf')]
+        # num_steps = [1, 2, 4, 8, 16, float('inf')]
+        # num_steps = [1, 2, 4, 8, 16]
+        num_steps = [6]
 
         for n in num_steps:
 
@@ -95,11 +99,9 @@ class GRID:
             self.step_reward_averages.append(self.avg_reward.copy())
             self.step_length_averages.append(self.avg_length.copy())
 
-        self.plot_learning(num_runs, num_episodes)
+        self.plot_learning(num_runs, num_steps)
+        print(self.action_values[0,0])
         self.export_policy()
-
-
-        
 
 
     def sarsa(self, num_episodes):
@@ -111,8 +113,7 @@ class GRID:
         reward so that they can be displayed graphically to the user.
 
         Args:
-            num_episodes (int): The number of episodes to generate
-
+            num_episodes (int): The number of episodes to generate.
         """
 
 
@@ -185,8 +186,7 @@ class GRID:
         so that they can be displayed graphically to the user.
 
         Args:
-            num_episodes (int): The number of episodes to generate
-
+            num_episodes (int): The number of episodes to generate.
         """
 
         # Keep track of learning statistics
@@ -278,6 +278,17 @@ class GRID:
         return
 
     def monte_carlo(self, num_episodes):
+        """Performs Monte Carlo algorithm for a given number of episodes.
+
+        Uses a Monte Carlo reinforcement learning algorithm to update the
+        action values for each of the different states of the problem. Also
+        tracks the average episode length and reward received over the number
+        of episodes so that they can be displayed graphically to the user.
+
+        Args:
+            num_episodes (int): The number of episodes to generate.
+        """
+
         # Keep track of learning statistics
         episode_lengths = np.zeros(num_episodes)
         episode_rewards = np.zeros(num_episodes)
@@ -393,7 +404,6 @@ class GRID:
 
         Args:
             pos (tuple): pos[0] is current row, pos[1] is current column.
-
         """
 
         action_values = np.array([self.action_values[pos[0], pos[1], a] for a in range(4)])
@@ -416,7 +426,7 @@ class GRID:
         from the current state.
 
         Args:
-            pos (tuple): pos[0] is current row, pos[1] is current column.
+            pos (tuple):  pos[0] is current row, pos[1] is current column.
 
         Returns:
             action (int): The index corresponding to the chosen action from
@@ -430,6 +440,29 @@ class GRID:
     # returns tuple of (next_pos, reward)
     # where next_pos is itself a tuple (row, col)
     def take_action(self, pos, action):
+        """Takes a given action from a given position.
+
+        Takes a given action from a given position, calculates the reward
+        received for that action, and checks to see if the action taken leads
+        to a terminal state. Returns the position after taking the action,
+        the reward received for taking the action, and whether or not the
+        next position is a terminal state.
+
+        Args:
+            pos (tuple):        pos[0] is the current row, pos[1] is current
+                                column.
+            action (int):       Denotes which direction to move. Constants are
+                                defined within the class to make dealing with
+                                actions simpler.
+
+        Returns:
+            next_pos (tuple):   next_pos[0] is the row you moved to,
+                                next_pos[1] is the column you moved to.
+            reward (int):       The reward received for taking the given action
+                                from the given state.
+            terminal (boolean): True if next_pos is a terminal state.
+        """
+
         row = pos[0]
         col = pos[1]
 
@@ -447,7 +480,7 @@ class GRID:
                 col += 1
 
         next_pos = (row, col)
-        reward = 0
+        reward = self.step_reward
         terminal = False
 
         # if next pos is a trap
@@ -462,7 +495,7 @@ class GRID:
 
         return next_pos, reward, terminal
 
-    def plot_learning(self, num_runs=1, num_episodes=1000, MC=False):
+    def plot_learning(self, num_runs=1, num_steps=[1]):
         """Plots the class' stored average episode reward and length.
 
         Plots the average episode reward for all different step sizes used for
@@ -470,10 +503,10 @@ class GRID:
         runs.
 
         Args:
-            num_runs (int):     The number of runs over which to average the
-                                data.
-            MC (boolean):       Denotes whether the data to plot is from a
-                                Monte Carlo simulation or from n-step SARSA.
+            num_runs (int):   The number of runs over which to average the
+                              data.
+            num_steps (list): The number of TD steps for each set of data
+                              to be plotted. MC has float('inf') steps.
         """
 
         print(num_runs)
@@ -483,11 +516,11 @@ class GRID:
         for n in range(len(self.step_reward_averages)):
             # Average all of the values
             y_vals = np.true_divide(self.step_reward_averages[n], num_runs)
-            if (MC):
+            if (num_steps[n] == float('inf')):
                 plt.plot(y_vals, label='MC')
             else:
-                plt.plot(y_vals, label='{0}-step'.format(2**n))
-        plt.legend(loc='upper left')
+                plt.plot(y_vals, label='{0}-step'.format(num_steps[n]))
+        plt.legend(loc='lower right')
         plt.title('Average of Averaged Episode Rewards')
         plt.xlabel('Number of Episodes')
         plt.ylabel('Average Episode Reward')
@@ -497,10 +530,10 @@ class GRID:
         for n in range(len(self.step_length_averages)):
             # Average all of the values
             y_vals = np.true_divide(self.step_length_averages[n], num_runs)
-            if (MC):
+            if (num_steps[n] == float('inf')):
                 plt.plot(y_vals, label='MC')
             else:
-                plt.plot(y_vals, label='{0}-step'.format(2**n))
+                plt.plot(y_vals, label='{0}-step'.format(num_steps[n]))
         plt.legend(loc='upper right')
         plt.title('Average of Averaged Episode Lengths')
         plt.xlabel('Number of Episodes')
@@ -557,12 +590,13 @@ if __name__ == "__main__":
 
     # Set up the default parameters
     if (len(sys.argv) == 1):
-        grid_dim = 8
-        num_traps = -1
-        num_steps = 12                 # TODO --> Make num_steps an array?
-        alpha = 0.1
-        discount = 1
-        epsilon = 0.01
+
+        # This is the default (example) setup for the problem
+        # grid = GRID(epsilon=0.1)
+        # grid = GRID()
+
+        # TODO --> switch this back to original. This is me playing with the problem parameters
+        grid = GRID(grid_dim=8, num_traps=-1, epsilon=0.25, trap_reward=-100, cheese_reward=1, step_reward=-1)
 
     # Read parameters from the command line
     elif (len(sys.argv) == 7):
@@ -572,10 +606,26 @@ if __name__ == "__main__":
         alpha = float(sys.argv[4])
         discount = float(sys.argv[5])
         epsilon = float(sys.argv[6])
+        
+        # Create the grid for the problem
+        grid = GRID(grid_dim, num_traps, num_steps, alpha, discount, epsilon, trap_reward=0, cheese_reward=1, step_reward=0)
 
-    # Create the grid for the problem
-    # THE LAST TWO COMMAND LINE ARGUMENTS ALLOW THE TRAP AND CHEESE REWARDS TO BE MODIFIED
-    grid = GRID(grid_dim, num_traps, num_steps, alpha, discount, epsilon, 0, 1)
+    # Read parameters from the command line (including extra parameters for the different reward values)
+    elif (len(sys.argv) == 10):
+        grid_dim = int(sys.argv[1])
+        num_traps = int(sys.argv[2])
+        num_steps = int(sys.argv[3])
+        alpha = float(sys.argv[4])
+        discount = float(sys.argv[5])
+        epsilon = float(sys.argv[6])
+        trap_reward = int(sys.argv[7])
+        cheese_reward = int(sys.argv[8])
+        step_reward = int(sys.argv[9])
+        
+        # Create the grid for the problem
+        grid = GRID(grid_dim, num_traps, num_steps, alpha, discount, epsilon, trap_reward, cheese_reward, step_reward)
+
+    print('FINISHED.')
 
 
         
