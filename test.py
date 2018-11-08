@@ -68,8 +68,8 @@ class GRID:
         num_runs = 1
         num_episodes = 10000
         # num_steps = [1, 2, 4, 8, 16, float('inf')]
-        # num_steps = [1, 2, 4, 8, 16]
-        num_steps = [6]
+        num_steps = [1, 2, 4, 8, 16]
+        #num_steps = [6]
 
         for n in num_steps:
 
@@ -98,6 +98,8 @@ class GRID:
 
             self.step_reward_averages.append(self.avg_reward.copy())
             self.step_length_averages.append(self.avg_length.copy())
+
+            print(self.action_values)
 
         self.plot_learning(num_runs, num_steps)
         print(self.action_values[0,0])
@@ -246,6 +248,9 @@ class GRID:
                 if (update_time > 0):
                     returns = 0
 
+                    updated_state = stored_states[update_time%self.num_steps]
+                    updated_action = stored_actions[update_time%self.num_steps]
+
                     # Sum the returns for the next n steps or until episode end
                     for t in range(update_time, min(end_time, update_time + self.num_steps)):
                         returns += (self.discount ** (t - update_time)) * stored_rewards[t%self.num_steps]
@@ -254,9 +259,9 @@ class GRID:
 
                     # Update the action value function
                     td_target = reward + returns
-                    td_delta = td_target - self.action_values[state[0], state[1], action]
-                    self.action_values[state[0], state[1], action] += self.alpha * td_delta
-                    self.update_policy(state)
+                    td_delta = td_target - self.action_values[updated_state[0], updated_state[1], updated_action]
+                    self.action_values[updated_state[0], updated_state[1], updated_action] += self.alpha * td_delta
+                    self.update_policy(updated_state)
                 
                 # If there are no more updates to make, exit episode
                 if (update_time == end_time - 1):
@@ -596,7 +601,7 @@ if __name__ == "__main__":
         # grid = GRID()
 
         # TODO --> switch this back to original. This is me playing with the problem parameters
-        grid = GRID(grid_dim=8, num_traps=-1, epsilon=0.25, trap_reward=-100, cheese_reward=1, step_reward=-1)
+        grid = GRID(grid_dim=8, num_traps=-1, epsilon=0.01, trap_reward=0, cheese_reward=1, step_reward=0)
 
     # Read parameters from the command line
     elif (len(sys.argv) == 7):
